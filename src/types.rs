@@ -1,14 +1,16 @@
 use std::convert::TryInto;
 
+use crate::moves::Position;
+
 #[derive(Debug, Clone)]
 pub struct Board {
-    ranks: [Rank; 11],
-    next: Player,
+    pub ranks: [Rank; 11],
+    pub next: Player,
 }
 
 #[derive(Debug, Clone)]
 pub struct Rank {
-    fields: [Option<Piece>; 11],
+    pub fields: [Option<Piece>; 11],
 }
 
 const WHITE: &str = "h";
@@ -22,7 +24,7 @@ pub enum Piece {
     King,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Player {
     /// Starts, is attacker
     Black,
@@ -145,6 +147,29 @@ impl Default for Rank {
     }
 }
 
+impl Board {
+    pub fn get(&self, pos: &Position) -> Option<Piece> {
+        let (x, y) = pos.to_indices();
+        self.ranks[y].fields[x]
+    }
+
+    pub fn pieces(&self, color: Player) -> Vec<Position> {
+        let mut pos = Vec::new();
+        for (y, rank) in self.ranks.iter().enumerate() {
+            for (x, piece) in rank.fields.iter().enumerate() {
+                match piece {
+                    Some(Piece::Normal(c)) if *c == color => pos.push(Position::from_indices(x, y)),
+                    Some(Piece::King) if color == Player::White => {
+                        pos.push(Position::from_indices(x, y))
+                    }
+                    _ => {}
+                }
+            }
+        }
+        pos
+    }
+}
+
 impl Hnfen for Board {
     fn as_hnfen(&self) -> String {
         let mut buf = String::new();
@@ -179,10 +204,21 @@ impl Hnfen for Board {
     }
 }
 
+impl Default for Board {
+    fn default() -> Self {
+        Board::from_hnfen(crate::DEFAULT_START_HNFEN)
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
+
+    #[test]
+    fn default_board() {
+        Board::default();
+    }
 
     #[test]
     fn test_rank_to_hnfen() {
@@ -220,5 +256,12 @@ mod tests {
             Board::from_hnfen(crate::DEFAULT_START_HNFEN).as_hnfen(),
             crate::DEFAULT_START_HNFEN
         );
+    }
+
+    #[test]
+    fn get_pieces_amount() {
+        let board = Board::default();
+        assert_eq!(board.pieces(Player::White).len(), 13);
+        assert_eq!(board.pieces(Player::Black).len(), 24);
     }
 }

@@ -1,3 +1,4 @@
+pub mod moves;
 pub mod types;
 
 /// Symbols for characters from https://hnefatafl.falch.dev/overview
